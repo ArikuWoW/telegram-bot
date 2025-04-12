@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ArikuWoW/telegram-bot/internal/clients/tg"
 	"github.com/ArikuWoW/telegram-bot/internal/config"
@@ -9,6 +13,17 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigCh
+		log.Printf("signal received: %v, shutting down", sig)
+		cancel()
+	}()
+
 	config, err := config.New()
 	if err != nil {
 		log.Fatal("config init failed:", err)
@@ -21,5 +36,9 @@ func main() {
 
 	msgModel := messages.New(tgClient)
 
-	tgClient.ListenUpdates(msgModel)
+	if err := tgClient.ListenUpdates(ctx, msgModel); err != nil {
+		log.Println("bot stopped with error:", err)
+	} else {
+		log.Println("boy stopped gracefully")
+	}
 }

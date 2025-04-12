@@ -1,6 +1,7 @@
 package tg
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -33,24 +34,29 @@ func (c *Client) SendMessage(text string, userID int64) error {
 	return nil
 }
 
-func (c *Client) ListenUpdates(msgModel *messages.Model) {
+func (c *Client) ListenUpdates(ctx context.Context, msgModel *messages.Model) error {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates := c.client.GetUpdatesChan(u)
-
 	log.Println("listening for messages")
 
-	for update := range updates {
-		if update.Message != nil {
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("stopping Telegram updates")
+			return ctx.Err()
+		case update := <-updates:
+			if update.Message != nil {
+				log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-			err := msgModel.IncomingMessage(messages.Message{
-				Text:   update.Message.Text,
-				UserID: update.Message.From.ID,
-			})
-			if err != nil {
-				log.Println("error processing message:", err)
+				err := msgModel.IncomingMessage(messages.Message{
+					Text:   update.Message.Text,
+					UserID: update.Message.From.ID,
+				})
+				if err != nil {
+					log.Println("error processing message:", err)
+				}
 			}
 		}
 	}

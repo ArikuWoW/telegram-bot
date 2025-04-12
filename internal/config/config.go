@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -22,12 +22,12 @@ func New() (*Service, error) {
 
 	rawYAML, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("Reading config file: %w", err)
+		return nil, errors.New("reading file")
 	}
 
 	err = yaml.Unmarshal(rawYAML, &s.config)
 	if err != nil {
-		return nil, fmt.Errorf("Parsing yaml: %w", err)
+		return nil, errors.New("parsing yaml")
 	}
 
 	return s, nil
