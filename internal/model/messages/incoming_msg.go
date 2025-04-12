@@ -17,6 +17,11 @@ type Message struct {
 	UserID int64
 }
 
-func (m *Model) IncomingMessage(msg Message) error {
+func (s *Model) IncomingMessage(msg Message) error {
+	if msg.Text == "/start" {
+		s.tgClient.SendMessage("hello", msg.UserID)
+		return nil
+	}
+	s.tgClient.SendMessage("Не знаю эту команду", msg.UserID)
 	return nil
 }
